@@ -3,55 +3,19 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Button, Row, Col, Container, Card, Modal } from "react-bootstrap";
 import { useState, useEffect } from "react";
 
-const currentColumns = [
-  {
-    id: "todo",
-    label: "Todo",
-  },
-  {
-    id: "in-progress",
-    label: "In Progress",
-  },
-  {
-    id: "completed",
-    label: "Completed",
-  },
-];
-
-const currentTasks = [
-  {
-    id: "buy-grocery",
-    label: "Buy grocery",
-    column: "todo",
-  },
-  {
-    id: "cook-dinner",
-    label: "Cook dinner",
-    column: "todo",
-  },
-  {
-    id: "eat-dinner",
-    label: "Eat dinner",
-    column: "in-progress",
-  },
-  {
-    id: "do-laundry",
-    label: "Do laundry",
-    column: "completed",
-  },
-];
-
 function App() {
   const [tasks, setTasks] = useState(null);
   const [columns, setColumns] = useState(null);
   const [cname, setCname] = useState("");
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/columns")
+    fetch(
+      (process.env.REACT_APP_API_URL || "http://localhost:1337") + "/columns"
+    )
       .then((res) => res.json())
       .then((result) => setColumns(result));
 
-    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/tasks")
+    fetch((process.env.REACT_APP_API_URL || "http://localhost:1337") + "/tasks")
       .then((res) => res.json())
       .then((result) => setTasks(result));
   }, []);
@@ -69,8 +33,9 @@ function App() {
 
   const handleClickDeleteColumn = (columnId) => {
     fetch(
-      process.env.REACT_APP_API_URL ||
-        "http://localhost:1337" + "/columns/" + columnId,
+      (process.env.REACT_APP_API_URL || "http://localhost:1337") +
+        "/columns/" +
+        columnId,
       {
         method: "DELETE",
       }
@@ -83,14 +48,17 @@ function App() {
   const handleClickAddTask = (columnId) => {
     const label = prompt("Task Name?");
 
-    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/tasks", {
-      method: "POST",
-      body: JSON.stringify({
-        label,
-        column: columnId,
-      }),
-      headers: { "Content-Type": "application/json" },
-    })
+    fetch(
+      (process.env.REACT_APP_API_URL || "http://localhost:1337") + "/tasks",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          label,
+          column: columnId,
+        }),
+        headers: { "Content-Type": "application/json" },
+      }
+    )
       .then((res) => res.json())
       .then((result) => setTasks((prevTasks) => [...prevTasks, result]));
 
@@ -114,7 +82,7 @@ function App() {
 
   const handleClickAddColumn = (label) => {
     fetch(
-      process.env.REACT_APP_API_URL || "http://localhost:1337" + "/columns",
+      (process.env.REACT_APP_API_URL || "http://localhost:1337") + "/columns",
       {
         method: "POST",
         body: JSON.stringify({

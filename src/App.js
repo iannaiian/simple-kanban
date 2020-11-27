@@ -1,9 +1,7 @@
 import "./index.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Button, Row, Col, Container, Card } from "react-bootstrap";
+import { Button, Row, Col, Container, Card, Modal } from "react-bootstrap";
 import { useState, useEffect } from "react";
-
-import Modal from "react-bootstrap/Modal";
 
 const currentColumns = [
   {
@@ -44,10 +42,21 @@ const currentTasks = [
 ];
 
 function App() {
-  const [tasks, setTasks] = useState(currentTasks);
-  const [columns, setColumns] = useState(currentColumns);
+  const [tasks, setTasks] = useState(null);
+  const [columns, setColumns] = useState(null);
   const [cname, setCname] = useState("");
 
+  useEffect(() => {
+    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/columns")
+      .then((res) => res.json())
+      .then((result) => setColumns(result));
+
+    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/tasks")
+      .then((res) => res.json())
+      .then((result) => setTasks(result));
+  }, []);
+
+  console.log(tasks);
   const [show, setShow] = useState(false);
 
   const handleClose = () => setShow(false);
@@ -59,21 +68,67 @@ function App() {
   };
 
   const handleClickDeleteColumn = (columnId) => {
-    setColumns(columns.filter((column) => column.id !== columnId));
+    fetch(
+      process.env.REACT_APP_API_URL ||
+        "http://localhost:1337" + "/columns/" + columnId,
+      {
+        method: "DELETE",
+      }
+    );
+    const updatedCol = columns.filter((column) => column.id !== columnId);
+
+    setColumns(updatedCol);
   };
 
   const handleClickAddTask = (columnId) => {
     const label = prompt("Task Name?");
-    label &&
-      setTasks([
-        ...tasks,
-        { label, id: label.toLowerCase(), column: columnId },
-      ]);
+
+    fetch(process.env.REACT_APP_API_URL || "http://localhost:1337" + "/tasks", {
+      method: "POST",
+      body: JSON.stringify({
+        label,
+        column: columnId,
+      }),
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((result) => setTasks((prevTasks) => [...prevTasks, result]));
+
+    // label &&
+    //   setTasks([
+    //     ...tasks,
+    //     { label, id: label.toLowerCase(), column: columnId },
+    //   ]);
   };
 
-  const handleClickAddColumn = () => {
-    const label = cname;
-    label && setColumns([...columns, { label, id: label.toLowerCase() }]);
+  const handleChange = (event) => {
+    setCname(event.target.value);
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    handleClickAddColumn(cname);
+    handleClose();
+    setCname("");
+  };
+
+  const handleClickAddColumn = (label) => {
+    fetch(
+      process.env.REACT_APP_API_URL || "http://localhost:1337" + "/columns",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          label,
+        }),
+        headers: { "Content-Type": "application/json" },
+      }
+    )
+      .then((res) => res.json())
+      .then((result) => setColumns((prevColumns) => [...prevColumns, result]));
+
+    // const label = cname;
+    // label && setColumns([...columns, { label, id: label.toLowerCase() }]);
+    // setCname("");
   };
 
   // useEffect(
@@ -94,77 +149,77 @@ function App() {
         </h1>
 
         <Modal show={show} onHide={handleClose} centered animation={true}>
-          <Modal.Body>
-            <input
-              onChange={(event) => setCname(event.target.value)}
-              className="colname w-100"
-              placeholder="Enter column name"
-              required
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              className="mx-auto"
-              variant="secondary"
-              onClick={handleClose}
-            >
-              Close
-            </Button>
-            <Button
-              className="mx-auto"
-              variant="primary"
-              onClick={() => {
-                handleClickAddColumn();
-                handleClose();
-              }}
-            >
-              Save Changes
-            </Button>
-          </Modal.Footer>
+          <form onSubmit={onSubmit}>
+            <Modal.Body>
+              <input
+                onChange={handleChange}
+                value={cname}
+                className="colname w-100"
+                placeholder="Enter column name"
+                required
+              />
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                className="mx-auto"
+                variant="secondary"
+                onClick={handleClose}
+              >
+                Close
+              </Button>
+              <Button className="mx-auto" variant="primary" type="submit">
+                Save Changes
+              </Button>
+            </Modal.Footer>
+          </form>
         </Modal>
       </div>
 
       <Row>
-        {columns.map((idx) => (
-          <Col md="3">
-            <Card className="column shadow mt-4 mx-0 py-4">
-              <h5 className="mt-0 mb-4">
-                {idx.label}{" "}
-                {tasks.filter((task) => task.column === idx.id).length < 1 ? (
-                  <Button
-                    variant="danger"
-                    className="delColumn"
-                    onClick={() => handleClickDeleteColumn(idx.id)}
-                  >
-                    x
-                  </Button>
-                ) : null}
-              </h5>
-
-              {tasks
-                .filter((task) => task.column === idx.id)
-                .map((task) => (
-                  <p key={task.id} className="task shadow-sm">
-                    {task.label}{" "}
+        {columns &&
+          columns.map((idx) => (
+            <Col md="3">
+              <Card className="column shadow mt-4 mx-0 py-4">
+                <h5 className="mt-0 mb-4">
+                  {idx.label}{" "}
+                  {tasks &&
+                  tasks.filter((task) => task.column.id === idx.id).length <
+                    1 ? (
                     <Button
-                      className="delTasks"
-                      variant="light"
-                      onClick={() => handleClickDeleteTask(task.id)}
+                      variant="danger"
+                      className="delColumn"
+                      onClick={() => handleClickDeleteColumn(idx.id)}
                     >
                       x
                     </Button>
-                  </p>
-                ))}
-              <Button
-                variant="light"
-                className="w-100"
-                onClick={() => handleClickAddTask(idx.id)}
-              >
-                + Add Task
-              </Button>
-            </Card>
-          </Col>
-        ))}
+                  ) : null}
+                </h5>
+
+                {tasks &&
+                  tasks
+                    .filter((task) => task.column.id === idx.id)
+                    .map((task) => (
+                      <p key={task.id} className="task shadow-sm">
+                        {task.label}{" "}
+                        <Button
+                          className="delTasks"
+                          variant="light"
+                          onClick={() => handleClickDeleteTask(task.id)}
+                        >
+                          x
+                        </Button>
+                      </p>
+                    ))}
+                <Button
+                  variant="light"
+                  className="w-100"
+                  onClick={() => handleClickAddTask(idx.id)}
+                >
+                  + Add Task
+                </Button>
+              </Card>
+            </Col>
+          ))}
       </Row>
     </Container>
   );
